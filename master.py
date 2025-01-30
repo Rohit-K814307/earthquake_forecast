@@ -53,7 +53,7 @@ train_dataset, val_dataset, test_dataset = create_datasets(dataset)
 
 
 tgnn = TemporalGNN(node_features=5, 
-                   periods=123,
+                   periods=74,
                    hidden_dim=HIDDEN_DIM,
                    out_features=3,
                    batch_size=BATCH_SIZE)
