@@ -1,6 +1,6 @@
 import torch
 import torch.optim as optim
-from torch.nn import MSELoss
+from torch.nn import MSELoss, L1Loss
 import numpy as np
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import os
@@ -40,9 +40,8 @@ def train_and_eval(train_set,
     best_model = None
 
     # Metrics
-    mse_metric = MeanSquaredError().to(device)
-    mae_metric = MeanAbsoluteError().to(device)
-    r2_metric = R2Score().to(device)
+    mse_metric = MSELoss()
+    mae_metric = L1Loss()
 
 
     writer = SummaryWriter(f"eq_forecast/models/{model_name}/{log_dir}")
@@ -79,18 +78,15 @@ def train_and_eval(train_set,
             train_loss += loss.item() * batch_size  # Scale by batch size
 
             # Collect predictions
-            y_true_train.append(labels.cpu().numpy())
-            y_pred_train.append(predictions.cpu().detach().numpy())
+            y_true_train.append(labels.cpu())
+            y_pred_train.append(predictions.cpu().detach())
 
         # Compute training metrics
         train_loss /= len(train_set.features)  # Normalize by dataset size
-        y_true_train = np.concatenate(y_true_train, axis=0)
-        y_pred_train = np.concatenate(y_pred_train, axis=0)
 
-        train_mse = mse_metric(y_true_train, y_pred_train)
+        train_mse = mse_metric(torch.stack(y_true_train), torch.stack(y_pred_train))
         train_rmse = np.sqrt(train_mse)
-        train_mae = mae_metric(y_true_train, y_pred_train)
-        train_r2 = r2_metric(y_true_train, y_pred_train)
+        train_mae = mae_metric(torch.stack(y_true_train), torch.stack(y_pred_train))
 
         # Validation loop
         model.eval()
@@ -98,7 +94,7 @@ def train_and_eval(train_set,
         y_true_val = []
         y_pred_val = []
 
-        val_progress = tqdm(val_set, desc=f"Epoch {epoch+1}/{num_epochs} | Validation", leave=False)
+        val_progress = tqdm(val_set, desc=f"Epoch {epoch+1}/{num_epochs} | Validation")
 
         with torch.no_grad():
             for data in val_progress:
@@ -112,18 +108,15 @@ def train_and_eval(train_set,
                 val_loss += loss.item() * batch_size  # Scale by batch size
 
                 # Collect predictions and labels
-                y_true_val.append(labels.cpu().numpy())
-                y_pred_val.append(predictions.cpu().numpy())
+                y_true_val.append(labels.cpu())
+                y_pred_val.append(predictions.cpu())
 
         # Compute validation metrics
         val_loss /= len(val_set.features)
-        y_true_val = np.concatenate(y_true_val, axis=0)
-        y_pred_val = np.concatenate(y_pred_val, axis=0)
 
-        val_mse = mse_metric(y_true_val, y_pred_val)
+        val_mse = mse_metric(torch.stack(y_true_val), torch.stack(y_pred_val))
         val_rmse = np.sqrt(val_mse)
-        val_mae = mae_metric(y_true_val, y_pred_val)
-        val_r2 = r2_metric(y_true_val, y_pred_val)
+        val_mae = mae_metric(torch.stack(y_true_val), torch.stack(y_pred_val))
 
         # Log to TensorBoard
         writer.add_scalar('Loss/train', train_loss, epoch)
@@ -134,8 +127,6 @@ def train_and_eval(train_set,
         writer.add_scalar('RMSE/val', val_rmse, epoch)
         writer.add_scalar('MAE/train', train_mae, epoch)
         writer.add_scalar('MAE/val', val_mae, epoch)
-        writer.add_scalar('R2/train', train_r2, epoch)
-        writer.add_scalar('R2/val', val_r2, epoch)
 
         # Learning rate scheduling
         scheduler.step(val_loss)
@@ -173,20 +164,17 @@ def train_and_eval(train_set,
             loss = criterion(predictions, labels)
             test_loss += loss.item() * batch_size
 
-            y_true_test.append(labels.cpu().numpy())
-            y_pred_test.append(predictions.cpu().numpy())
+            y_true_test.append(labels.cpu())
+            y_pred_test.append(predictions.cpu())
 
     test_loss /= len(test_set.features)
-    y_true_test = np.concatenate(y_true_test, axis=0)
-    y_pred_test = np.concatenate(y_pred_test, axis=0)
 
-    test_mse = mse_metric(y_true_test, y_pred_test)
+    test_mse = mse_metric(torch.stack(y_true_test), torch.stack(y_pred_test))
     test_rmse = np.sqrt(test_mse)
-    test_mae = mae_metric(y_true_test, y_pred_test)
-    test_r2 = r2_metric(y_true_test, y_pred_test)
+    test_mae = mae_metric(torch.stack(y_true_test), torch.stack(y_pred_test))
 
     print(f'Test Loss: {test_loss:.4f}')
-    print(f'Test MSE: {test_mse:.4f} | Test RMSE: {test_rmse:.4f} | Test MAE: {test_mae:.4f} | Test R²: {test_r2:.4f}')
+    print(f'Test MSE: {test_mse:.4f} | Test RMSE: {test_rmse:.4f} | Test MAE: {test_mae:.4f}')
 
     torch.save(best_model, f"eq_forecast/models/{model_name}/{checkpoint_dir}/best_model.pth")
     print(f"Best model saved!")
