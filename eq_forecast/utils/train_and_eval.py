@@ -83,7 +83,7 @@ def train_and_eval(train_set,
             y_pred_train.append(predictions.cpu().detach().numpy())
 
         # Compute training metrics
-        train_loss /= len(train_set.dataset)  # Normalize by dataset size
+        train_loss /= len(train_set.features)  # Normalize by dataset size
         y_true_train = np.concatenate(y_true_train, axis=0)
         y_pred_train = np.concatenate(y_pred_train, axis=0)
 
@@ -116,7 +116,7 @@ def train_and_eval(train_set,
                 y_pred_val.append(predictions.cpu().numpy())
 
         # Compute validation metrics
-        val_loss /= len(val_set.dataset)
+        val_loss /= len(val_set.features)
         y_true_val = np.concatenate(y_true_val, axis=0)
         y_pred_val = np.concatenate(y_pred_val, axis=0)
 
@@ -176,7 +176,7 @@ def train_and_eval(train_set,
             y_true_test.append(labels.cpu().numpy())
             y_pred_test.append(predictions.cpu().numpy())
 
-    test_loss /= len(test_set.dataset)
+    test_loss /= len(test_set.features)
     y_true_test = np.concatenate(y_true_test, axis=0)
     y_pred_test = np.concatenate(y_pred_test, axis=0)
 
