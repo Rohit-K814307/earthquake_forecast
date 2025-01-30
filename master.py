@@ -47,7 +47,7 @@ dataset = EQ_Dataset(start_time=START_TIME,
                  overlap_time_length=WINDOW_OVERLAP_DURATION_MS,
                  time_sensitivity=DELTA_TIME_DECAY,
                  save_data=True, 
-                 agg_new_data=False)
+                 agg_new_data=True)
 
 train_dataset, val_dataset, test_dataset = create_datasets(dataset)
 
