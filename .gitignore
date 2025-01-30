@@ -1,0 +1,6 @@
+**/__pycache__/
+.DS_Store
+eq_forecast/data/raw
+eq_forecast/models/TGNN
+eq_forecast/visualization/preprocessed
+eq_forecast/visualization/raw
