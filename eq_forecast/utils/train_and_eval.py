@@ -112,8 +112,9 @@ def train_and_eval(train_set,
                 loss = criterion(predictions, labels)
                 val_loss += loss.item() * batch_size  # Scale by batch size
 
-                make_pred_heatmaps(predictions, labels, grid, f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_mag_pred.html",f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_mag_act.html","Magnitude", 0)
-                make_pred_heatmaps(predictions, labels, grid, f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_depth_pred.html",f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_depth_act.html","Depth", 1)
+                if (val_step + 1) % 500 == 0:
+                    make_pred_heatmaps(predictions, labels, grid, f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_mag_pred.html",f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_mag_act.html","Magnitude", 0)
+                    make_pred_heatmaps(predictions, labels, grid, f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_depth_pred.html",f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_depth_act.html","Depth", 1)
                 
                 # Collect predictions and labels
                 y_true_val.append(labels.cpu())
