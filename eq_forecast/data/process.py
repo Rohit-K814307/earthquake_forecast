@@ -315,7 +315,7 @@ def create_time_series(data_dict, n_lat, n_lon, grid, window_duration=3600, over
         edge_matrix[edge_matrix > 0] = 1 + (edge_matrix[edge_matrix > 0] - min_distance) * (1 / (max_distance - min_distance))
 
 
-    return edge_matrix, feature_matrices, label_matrices, lab_pad_mat
+    return edge_matrix, feature_matrices, label_matrices, lab_pad_mat, max_events
 
 
 def make_visualizations(output_dir, data_dict):
@@ -341,9 +341,9 @@ def preprocess(data, grid, n_lat, n_lon, window_size=864000000, overlap=43200000
     data = preprocess_earthquake_data_global(data)
     make_visualizations("eq_forecast/visualization/preprocessed", data)
 
-    edge_matrix, X, y, y_pad_matrix = create_time_series(data, n_lat, n_lon, grid, window_size, overlap, time_sensitivity=time_sensitivity)
+    edge_matrix, X, y, y_pad_matrix, events = create_time_series(data, n_lat, n_lon, grid, window_size, overlap, time_sensitivity=time_sensitivity)
     
     if save:
         pd.DataFrame(data).to_csv("eq_forecast/data/raw/preprocessed.csv", index=False)
 
-    return X, y, edge_matrix, y_pad_matrix
+    return X, y, edge_matrix, y_pad_matrix, events

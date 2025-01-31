@@ -8,8 +8,8 @@ import torch
 """HYPERPARAMS"""
 
 #Data
-START_TIME="2000-01-01"
-END_TIME="2010-01-01"
+START_TIME="1950-01-01"
+END_TIME="2025-01-01"
 MIN_LAT=24.39630
 MAX_LAT=49.3547868
 MIN_LON=-124.7844079
@@ -17,12 +17,14 @@ MAX_LON=-66.93457
 MIN_MAG=3.5
 GRID_X=10
 GRID_Y=10
-WINDOW_DURATION_MS=864000000   #10 days
-WINDOW_OVERLAP_DURATION_MS=432000000 #5days
+WINDOW_DURATION_MS=432000000   #5 days
+WINDOW_OVERLAP_DURATION_MS=216000000 #2.5days
 DELTA_TIME_DECAY=0.01
 
+
+
 #Model
-BATCH_SIZE=16
+BATCH_SIZE=4
 HIDDEN_DIM=32
 
 #Training
@@ -51,9 +53,8 @@ dataset = EQ_Dataset(start_time=START_TIME,
 
 train_dataset, val_dataset, test_dataset = create_datasets(dataset)
 
-
 tgnn = TemporalGNN(node_features=5, 
-                   periods=74,
+                   periods=dataset.num_events_per_window,
                    hidden_dim=HIDDEN_DIM,
                    out_features=3,
                    batch_size=BATCH_SIZE)
@@ -62,6 +63,7 @@ train_and_eval(
     train_set=train_dataset,
     test_set=test_dataset,
     val_set=val_dataset,
+    grid=dataset.grid,
     model=tgnn,
     num_epochs=EPOCHS,
     lr=LR,

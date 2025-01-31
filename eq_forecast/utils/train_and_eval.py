@@ -3,8 +3,8 @@ import torch.optim as optim
 from torch.nn import MSELoss, L1Loss
 import numpy as np
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from eq_forecast.visualization.heatmap import make_pred_heatmaps
 import os
-from torchmetrics.regression import MeanSquaredError, MeanAbsoluteError, R2Score
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -12,6 +12,7 @@ from tqdm import tqdm
 def train_and_eval(train_set,
                    test_set,
                    val_set,
+                   grid,
                    model,
                    num_epochs,
                    lr,
@@ -28,6 +29,7 @@ def train_and_eval(train_set,
     # Make necessary dirs
     os.makedirs(f"eq_forecast/models/{model_name}/{checkpoint_dir}", exist_ok=True)
     os.makedirs(f"eq_forecast/models/{model_name}/{log_dir}", exist_ok=True)
+    os.makedirs(f"eq_forecast/models/{model_name}/heatmaps", exist_ok=True)
 
     # Set up optimizer and loss function
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -97,16 +99,22 @@ def train_and_eval(train_set,
         val_progress = tqdm(val_set, desc=f"Epoch {epoch+1}/{num_epochs} | Validation")
 
         with torch.no_grad():
+            val_step = 0
             for data in val_progress:
+                val_step += 1
                 features = data.x.to(device)
                 labels = data.y.to(device)
                 edge_idx = data.edge_index.to(device)
                 edge_attr = data.edge_attr.to(device)
 
+
                 predictions = model(features, edge_idx, edge_attr)
                 loss = criterion(predictions, labels)
                 val_loss += loss.item() * batch_size  # Scale by batch size
 
+                make_pred_heatmaps(predictions, labels, grid, f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_mag_pred.html",f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_mag_act.html","Magnitude", 0)
+                make_pred_heatmaps(predictions, labels, grid, f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_depth_pred.html",f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_depth_act.html","Depth", 1)
+                
                 # Collect predictions and labels
                 y_true_val.append(labels.cpu())
                 y_pred_val.append(predictions.cpu())

@@ -36,7 +36,7 @@ class EQ_Dataset(Dataset):
 
         self.raw_data = load_df(self.grid, "eq_forecast/data/raw/eq_data.json", save_data)
 
-        self.feature_mats, self.labels, self.adj_mat, y_pad = preprocess(self.raw_data, self.grid, n_lat, n_lon, window_time_length, overlap_time_length, time_sensitivity=time_sensitivity, save=save_data)
+        self.feature_mats, self.labels, self.adj_mat, y_pad, self.num_events_per_window = preprocess(self.raw_data, self.grid, n_lat, n_lon, window_time_length, overlap_time_length, time_sensitivity=time_sensitivity, save=save_data)
 
         self.feature_mats = self.batch_and_pad_features(np.transpose(self.feature_mats, (0, 2, 3, 1)), batch_size)
         self.labels, self.pad_labels = self.batch_and_pad_labels(np.transpose(self.labels, (0, 2, 3, 1)), y_pad, batch_size)
