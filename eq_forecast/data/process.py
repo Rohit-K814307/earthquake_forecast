@@ -208,71 +208,63 @@ def create_time_series(data_dict, n_lat, n_lon, grid, window_duration=3600, over
     max_events = max(max_events_x, max_events_y)
     print(f"Max events per sequence: {max_events}")
 
-    def create_feature_matrices(all_graphs):
+    def create_feature_matrices(all_graphs, num_nodes, max_events, data_dict):
         feature_matrices = []
+        
         for window_num in tqdm(range(len(all_graphs)), desc="Building Feature Matrices"):
             feature_matrices_window = []
-            for graph_num in range(len(all_graphs[window_num])):
-                graph = all_graphs[window_num][graph_num]
-                feature_matrix = np.zeros((num_nodes, 5)) 
-
-                for i in range(num_nodes):
-                    feature_matrix[i][0] = graph[i]["node_plate_dist"]
-                    feature_matrix[i][1] = graph[i]["node_fault_dist"]
-                    feature_matrix[i][2] = graph[i]["mag"]  
-                    feature_matrix[i][3] = graph[i]["depth"] 
-                    feature_matrix[i][4] = graph[i]["delta"]   
-
+            
+            for graph in all_graphs[window_num]:
+                feature_matrix = np.array([
+                    [graph[i]["node_plate_dist"], graph[i]["node_fault_dist"], 
+                    graph[i]["mag"], graph[i]["depth"], graph[i]["delta"]]
+                    for i in range(num_nodes)
+                ])
                 feature_matrices_window.append(feature_matrix)
-
-  
-            while len(feature_matrices_window) < max_events:
-                zero_matrix = np.zeros((num_nodes, 5)) 
-                for i in range(num_nodes):
-                    zero_matrix[i][0] = data_dict["node_plate_dist"][i]  
-                    zero_matrix[i][1] = data_dict["node_fault_dist"][i]  
-                    zero_matrix[i][2] = 0
-                    zero_matrix[i][3] = 0
-                    zero_matrix[i][4] = 0  
-                feature_matrices_window.append(zero_matrix)
-
+            
+            # Padding with precomputed zero matrix
+            if len(feature_matrices_window) < max_events:
+                zero_matrix = np.column_stack((
+                    np.array(data_dict["node_plate_dist"]),  
+                    np.array(data_dict["node_fault_dist"]),
+                    np.zeros((num_nodes, 3))  # Zero columns for mag, depth, delta
+                ))
+                feature_matrices_window.extend([zero_matrix] * (max_events - len(feature_matrices_window)))
+            
             feature_matrices.append(feature_matrices_window)
-        return feature_matrices
-    
-    def create_label_matrices(all_graphs):
-        padding_matrix =[]
+        
+        return np.array(feature_matrices)
+
+
+    def create_label_matrices(all_graphs, num_nodes, max_events):
         feature_matrices = []
+        padding_matrix = []
+
         for window_num in tqdm(range(len(all_graphs)), desc="Building Label Matrices"):
             feature_matrices_window = []
             pad_window = []
-            for graph_num in range(len(all_graphs[window_num])):
-                graph = all_graphs[window_num][graph_num]
-                feature_matrix = np.zeros((num_nodes, 3))
-                pad_window.append(1) 
 
-                for i in range(num_nodes):
-                    feature_matrix[i][0] = graph[i]["mag"] 
-                    feature_matrix[i][1] = graph[i]["depth"]
-                    feature_matrix[i][2] = graph[i]["delta"]
-
+            for graph in all_graphs[window_num]:
+                feature_matrix = np.array([
+                    [graph[i]["mag"], graph[i]["depth"], graph[i]["delta"]]
+                    for i in range(num_nodes)
+                ])
                 feature_matrices_window.append(feature_matrix)
+                pad_window.append(1)
 
-            while len(feature_matrices_window) < max_events:
-                zero_matrix = np.zeros((num_nodes, 3))  
-                for i in range(num_nodes):
-                    zero_matrix[i][0] = 0 
-                    zero_matrix[i][1] = 0 
-                    zero_matrix[i][2] = 0
-                feature_matrices_window.append(zero_matrix)
-                pad_window.append(0)
+            # Padding with zeros
+            if len(feature_matrices_window) < max_events:
+                zero_matrix = np.zeros((num_nodes, 3))
+                feature_matrices_window.extend([zero_matrix] * (max_events - len(feature_matrices_window)))
+                pad_window.extend([0] * (max_events - len(pad_window)))
 
             feature_matrices.append(feature_matrices_window)
             padding_matrix.append(pad_window)
+
         return np.array(feature_matrices), np.array(padding_matrix)
     
-
-    feature_matrices = np.array(create_feature_matrices(all_graphs))
-    label_matrices, lab_pad_mat  = create_label_matrices(window_labels)
+    feature_matrices = np.array(create_feature_matrices(all_graphs, num_nodes, max_events, data_dict))
+    label_matrices, lab_pad_mat  = create_label_matrices(window_labels, num_nodes, max_events)
 
     #MAKE GRAPH EDGE MATRIX WEIGHTED BY DISTANCE
     edge_matrix = np.zeros((num_nodes, num_nodes))
