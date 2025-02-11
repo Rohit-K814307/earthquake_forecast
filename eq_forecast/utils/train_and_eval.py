@@ -59,7 +59,7 @@ def train_and_eval(train_set,
         y_true_train = []
         y_pred_train = []
 
-        train_progress = tqdm(train_set, desc=f"Epoch {epoch+1}/{num_epochs} | Training")
+        train_progress = tqdm(train_set, desc=f"Epoch {epoch+1}/{num_epochs} | Training", total=len(train_set.features),unit="batch")
 
         for data in train_progress:
             features = data.x.to(device)
@@ -96,7 +96,7 @@ def train_and_eval(train_set,
         y_true_val = []
         y_pred_val = []
 
-        val_progress = tqdm(val_set, desc=f"Epoch {epoch+1}/{num_epochs} | Validation")
+        val_progress = tqdm(val_set, desc=f"Epoch {epoch+1}/{num_epochs} | Validation", total=len(val_set.features), unit="batch")
 
         with torch.no_grad():
             val_step = 0
@@ -112,7 +112,7 @@ def train_and_eval(train_set,
                 loss = criterion(predictions, labels)
                 val_loss += loss.item() * batch_size  # Scale by batch size
 
-                if (val_step + 1) % 500 == 0:
+                if val_step % 5 == 0:
                     make_pred_heatmaps(predictions, labels, grid, f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_mag_pred.html",f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_mag_act.html","Magnitude", 0)
                     make_pred_heatmaps(predictions, labels, grid, f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_depth_pred.html",f"eq_forecast/models/{model_name}/heatmaps/epoch_{epoch}_valstep_{val_step}_depth_act.html","Depth", 1)
                 
@@ -151,7 +151,7 @@ def train_and_eval(train_set,
                 print("Early stopping...")
                 break
 
-        if (epoch + 1) % save_interval == 0:
+        if epoch % save_interval == 0:
             torch.save(model.state_dict(), f"eq_forecast/models/{model_name}/{checkpoint_dir}/model_epoch_{epoch+1}.pth")
             print(f"Model saved at epoch {epoch+1}")
 

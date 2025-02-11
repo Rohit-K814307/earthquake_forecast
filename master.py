@@ -17,14 +17,14 @@ MAX_LON=-66.93457
 MIN_MAG=3.5
 GRID_X=8
 GRID_Y=8
-WINDOW_DURATION_MS=432000000   #5 days
-WINDOW_OVERLAP_DURATION_MS=216000000 #2.5days
+WINDOW_DURATION_MS=2.592e+8   #3 day
+WINDOW_OVERLAP_DURATION_MS=1.296e+8 #1.5 day
 DELTA_TIME_DECAY=0.01
 
 
 
 #Model
-BATCH_SIZE=4
+BATCH_SIZE=16
 HIDDEN_DIM=32
 
 #Training
@@ -49,7 +49,7 @@ dataset = EQ_Dataset(start_time=START_TIME,
                  overlap_time_length=WINDOW_OVERLAP_DURATION_MS,
                  time_sensitivity=DELTA_TIME_DECAY,
                  save_data=True, 
-                 agg_new_data=True)
+                 agg_new_data=False)
 
 train_dataset, val_dataset, test_dataset = create_datasets(dataset)
 
